@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { HandLandmarker, FilesetResolver, DrawingUtils } from '@mediapipe/tasks-vision';
+import { GestureEngine } from '../utils/GestureEngine';
 import './HandTracker.css';
 
 const HandTracker: React.FC = () => {
@@ -86,6 +87,9 @@ const HandTracker: React.FC = () => {
                   return drawingUtils.lerp(data.from?.z || 0, -0.15, 0.1, 5, 1);
                 }
               });
+              
+              // Run our math utilities for Step 3.1
+              GestureEngine.debugDistances(landmarks);
             }
           }
           canvasCtx.restore();
