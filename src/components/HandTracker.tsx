@@ -69,7 +69,14 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
       let currentGesture: GestureState = 'NONE';
       let gestureFrames = 0;
       let lastEmittedGesture: GestureState = 'NONE';
-      const DEBOUNCE_FRAMES = 15; // Must hold gesture for ~15 frames to trigger
+      
+      // Dynamic debounce thresholds based on the type of gesture
+      const DEBOUNCE_THRESHOLDS: Record<GestureState, number> = {
+        FIST: 12,       // Requires holding to be deliberate
+        PINCH: 3,       // Quick, snappy action like a mouse click
+        OPEN_PALM: 10,
+        NONE: 2         // Quick reset
+      };
 
       const predict = () => {
         if (video.currentTime !== lastVideoTime) {
@@ -103,7 +110,9 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
               // 2. Debounce logic
               if (rawGesture === currentGesture) {
                 gestureFrames++;
-                if (gestureFrames >= DEBOUNCE_FRAMES && rawGesture !== lastEmittedGesture) {
+                const threshold = DEBOUNCE_THRESHOLDS[rawGesture] || 10;
+                
+                if (gestureFrames >= threshold && rawGesture !== lastEmittedGesture) {
                   // We have a stable new gesture!
                   lastEmittedGesture = rawGesture;
                   if (onGesture) {

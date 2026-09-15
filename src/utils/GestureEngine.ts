@@ -49,7 +49,7 @@ export class GestureEngine {
     }
 
     // 4. OPEN PALM DETECTION (Fingertips extended far from wrist)
-    if (indexDist > 0.4 && middleDist > 0.4 && ringDist > 0.4 && pinkyDist > 0.4) {
+    if (indexDist > 0.35 && middleDist > 0.35 && ringDist > 0.35 && pinkyDist > 0.35) {
       return 'OPEN_PALM';
     }
 
