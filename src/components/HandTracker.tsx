@@ -1,9 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { HandLandmarker, FilesetResolver, DrawingUtils } from '@mediapipe/tasks-vision';
 import { GestureEngine } from '../utils/GestureEngine';
+import type { GestureState } from '../utils/GestureEngine';
 import './HandTracker.css';
 
-const HandTracker: React.FC = () => {
+interface HandTrackerProps {
+  onGesture?: (gesture: GestureState) => void;
+}
+
+const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -59,6 +64,12 @@ const HandTracker: React.FC = () => {
 
       const drawingUtils = new DrawingUtils(canvasCtx);
       let lastVideoTime = -1;
+      
+      // Debounce State
+      let currentGesture: GestureState = 'NONE';
+      let gestureFrames = 0;
+      let lastEmittedGesture: GestureState = 'NONE';
+      const DEBOUNCE_FRAMES = 15; // Must hold gesture for ~15 frames to trigger
 
       const predict = () => {
         if (video.currentTime !== lastVideoTime) {
@@ -73,7 +84,7 @@ const HandTracker: React.FC = () => {
           canvasCtx.save();
           canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
           
-          if (results.landmarks) {
+          if (results.landmarks && results.landmarks.length > 0) {
             for (const landmarks of results.landmarks) {
               drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, {
                 color: "#00ffcc",
@@ -83,13 +94,35 @@ const HandTracker: React.FC = () => {
                 color: "#ffffff",
                 fillColor: "#00ffcc",
                 lineWidth: 2,
-                radius: (data: any) => {
-                  return drawingUtils.lerp(data.from?.z || 0, -0.15, 0.1, 5, 1);
-                }
+                radius: 4
               });
               
-              // Run our math utilities for Step 3.1
-              GestureEngine.debugDistances(landmarks);
+              // 1. Get raw gesture
+              const rawGesture = GestureEngine.detectGesture(landmarks);
+              
+              // 2. Debounce logic
+              if (rawGesture === currentGesture) {
+                gestureFrames++;
+                if (gestureFrames >= DEBOUNCE_FRAMES && rawGesture !== lastEmittedGesture) {
+                  // We have a stable new gesture!
+                  lastEmittedGesture = rawGesture;
+                  if (onGesture) {
+                    onGesture(rawGesture);
+                  }
+                  console.log(`[Debounced Trigger] Fired: ${rawGesture}`);
+                }
+              } else {
+                // Gesture changed, reset counter
+                currentGesture = rawGesture;
+                gestureFrames = 0;
+              }
+            }
+          } else {
+            // No hand detected, reset everything to NONE
+            if (lastEmittedGesture !== 'NONE') {
+               lastEmittedGesture = 'NONE';
+               currentGesture = 'NONE';
+               gestureFrames = 0;
             }
           }
           canvasCtx.restore();
