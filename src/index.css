@@ -1,17 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
 :root {
-  /* Color Palette */
-  --color-bg: #0f0f13;
-  --color-bg-glass: rgba(255, 255, 255, 0.05);
-  --color-border-glass: rgba(255, 255, 255, 0.1);
-  --color-text-main: #f0f0f5;
-  --color-text-muted: #8e8e99;
-  
-  --color-accent-neon: #00ffcc;
-  --color-accent-glow: rgba(0, 255, 204, 0.4);
-  
-  /* Utilities */
-  --border-radius: 24px;
-  --transition-speed: 0.3s;
+  --color-bg: #000000;
+  --color-text: #ffffff;
+  --color-accent: #00ffcc;
 }
 
 * {
@@ -20,61 +12,142 @@
   padding: 0;
 }
 
-body {
-  font-family: 'Inter', sans-serif;
+body, html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* Hide scrollbars for TV */
   background-color: var(--color-bg);
-  color: var(--color-text-main);
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-image: radial-gradient(circle at top right, rgba(0, 255, 204, 0.05) 0%, transparent 40%),
-                    radial-gradient(circle at bottom left, rgba(142, 142, 153, 0.05) 0%, transparent 40%);
-  background-attachment: fixed;
-  overflow: hidden;
+  color: var(--color-text);
+  font-family: 'Inter', sans-serif;
 }
 
-/* Glassmorphism primitives */
-.glass-panel {
-  background: var(--color-bg-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--color-border-glass);
-  border-radius: var(--border-radius);
-  padding: 24px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  transition: all var(--transition-speed) ease;
-}
-
-/* Dashboard Layout */
 #root {
   width: 100%;
   height: 100%;
+}
+
+/* TV Container */
+.tv-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Camera Layer fills the screen */
+.camera-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Make the HandTracker fill the container completely */
+.camera-layer .hand-tracker-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  background: black;
+}
+.camera-layer .webcam-feed, 
+.camera-layer .tracking-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Cinematic Gradient to make text readable */
+.gradient-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  background: linear-gradient(
+    to bottom, 
+    rgba(0,0,0,0.7) 0%, 
+    rgba(0,0,0,0) 20%, 
+    rgba(0,0,0,0) 60%, 
+    rgba(0,0,0,0.95) 100%
+  );
+  pointer-events: none;
+}
+
+/* UI Layer */
+.ui-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 4rem;
+  pointer-events: none; /* Let clicks pass through to video if needed */
+}
+
+/* Header */
+.tv-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
 }
 
-.dashboard-container {
-  width: 90vw;
-  max-width: 1200px;
-  height: 80vh;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  padding: 2rem;
-}
-
-h1 {
+.tv-header h1 {
   font-size: 2.5rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  background: linear-gradient(90deg, #fff, var(--color-text-muted));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  text-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
 
-p {
-  color: var(--color-text-muted);
-  font-size: 1.1rem;
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
+  color: #ff3366;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.live-badge .dot {
+  width: 12px;
+  height: 12px;
+  background-color: #ff3366;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #ff3366;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+/* Subtitle Area */
+.subtitle-container {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.subtitle-text {
+  font-size: 6rem; /* Huge for TV */
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 8px 24px rgba(0,0,0,0.8);
+  transition: all 0.3s ease;
+}
+
+.subtitle-text.dim {
+  font-size: 3rem;
+  color: rgba(255,255,255,0.6);
+  font-weight: 600;
 }

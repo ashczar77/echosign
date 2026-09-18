@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "name": "EchoSign",
+  "description": "A Sign-to-Speech Accessibility App for Fire TV",
+  "launch_path": "/index.html",
+  "icons": {
+    "128": "/icon-128.png",
+    "512": "/icon-512.png"
+  },
+  "developer": {
+    "name": "EchoSign Team",
+    "url": "https://devpost.com"
+  },
+  "default_locale": "en",
+  "permissions": {
+    "video-capture": {
+      "description": "Required to recognize sign language gestures via the Fire TV webcam."
+    }
+  }
+}
