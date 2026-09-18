@@ -1,18 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { HandLandmarker, FilesetResolver, DrawingUtils } from '@mediapipe/tasks-vision';
-import { GestureEngine } from '../utils/GestureEngine';
-import type { GestureState } from '../utils/GestureEngine';
+import { GestureRecognizer, FilesetResolver, DrawingUtils, HandLandmarker } from '@mediapipe/tasks-vision';
 import './HandTracker.css';
 
 interface HandTrackerProps {
-  onGesture?: (gesture: GestureState) => void;
+  onGesture?: (gesture: string) => void;
 }
 
 const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const handLandmarkerRef = useRef<HandLandmarker | null>(null);
+  const recognizerRef = useRef<GestureRecognizer | null>(null);
   const animationRef = useRef<number>();
 
   useEffect(() => {
@@ -22,9 +20,9 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
       const vision = await FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
       );
-      handLandmarkerRef.current = await HandLandmarker.createFromOptions(vision, {
+      recognizerRef.current = await GestureRecognizer.createFromOptions(vision, {
         baseOptions: {
-          modelAssetPath: "/models/hand_landmarker.task",
+          modelAssetPath: "/gesture_recognizer.task",
           delegate: "GPU"
         },
         runningMode: "VIDEO",
@@ -55,27 +53,29 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
     const startDetection = () => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      const landmarker = handLandmarkerRef.current;
+      const canvasCtx = canvas?.getContext("2d");
+      const recognizer = recognizerRef.current;
 
-      if (!video || !canvas || !landmarker) return;
-
-      const canvasCtx = canvas.getContext("2d");
-      if (!canvasCtx) return;
+      if (!recognizer || !video || !canvas || !canvasCtx) return;
 
       const drawingUtils = new DrawingUtils(canvasCtx);
       let lastVideoTime = -1;
       
       // Debounce State
-      let currentGesture: GestureState = 'NONE';
+      let currentGesture: string = 'None';
       let gestureFrames = 0;
-      let lastEmittedGesture: GestureState = 'NONE';
+      let lastEmittedGesture: string = 'None';
       
       // Dynamic debounce thresholds based on the type of gesture
-      const DEBOUNCE_THRESHOLDS: Record<GestureState, number> = {
-        FIST: 12,       // Requires holding to be deliberate
-        PINCH: 3,       // Quick, snappy action like a mouse click
-        OPEN_PALM: 10,
-        NONE: 2         // Quick reset
+      const DEBOUNCE_THRESHOLDS: Record<string, number> = {
+        'None': 2,
+        'Closed_Fist': 12,
+        'Open_Palm': 10,
+        'Pointing_Up': 5,
+        'Thumb_Down': 5,
+        'Thumb_Up': 5,
+        'Victory': 5,
+        'ILoveYou': 5
       };
 
       const predict = () => {
@@ -86,13 +86,15 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
           
-          const results = landmarker.detectForVideo(video, performance.now());
+          const results = recognizer.recognizeForVideo(video, performance.now());
           
           canvasCtx.save();
           canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
           
           if (results.landmarks && results.landmarks.length > 0) {
-            for (const landmarks of results.landmarks) {
+            for (let i = 0; i < results.landmarks.length; i++) {
+              const landmarks = results.landmarks[i];
+              // Note: Using HandLandmarker.HAND_CONNECTIONS to safely avoid undefined errors
               drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, {
                 color: "#00ffcc",
                 lineWidth: 4
@@ -104,8 +106,17 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
                 radius: 4
               });
               
-              // 1. Get raw gesture
-              const rawGesture = GestureEngine.detectGesture(landmarks);
+              // 1. Get raw gesture from MediaPipe
+              let rawGesture = 'None';
+              if (results.gestures && results.gestures[i] && results.gestures[i].length > 0) {
+                // MediaPipe returns an array of recognized gestures for the hand, sorted by confidence.
+                // We take the top one.
+                const topGesture = results.gestures[i][0];
+                // Only accept if confidence is above 60%
+                if (topGesture.score > 0.6) {
+                  rawGesture = topGesture.categoryName;
+                }
+              }
               
               // 2. Debounce logic
               if (rawGesture === currentGesture) {
@@ -127,10 +138,10 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
               }
             }
           } else {
-            // No hand detected, reset everything to NONE
-            if (lastEmittedGesture !== 'NONE') {
-               lastEmittedGesture = 'NONE';
-               currentGesture = 'NONE';
+            // No hand detected, reset everything to None
+            if (lastEmittedGesture !== 'None') {
+               lastEmittedGesture = 'None';
+               currentGesture = 'None';
                gestureFrames = 0;
             }
           }
@@ -150,7 +161,7 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       if (stream) stream.getTracks().forEach(track => track.stop());
-      if (handLandmarkerRef.current) handLandmarkerRef.current.close();
+      if (recognizerRef.current) recognizerRef.current.close();
     };
   }, []);
 
