@@ -69,7 +69,10 @@ function App() {
 
       <div className="ui-layer">
         <header className="tv-header">
-          <h1>EchoSign</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <img src="/logo.jpg" alt="EchoSign Logo" style={{ height: '60px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,255,204,0.3)' }} />
+            <h1>EchoSign</h1>
+          </div>
           <div className="live-badge">
             <span className="dot"></span> LIVE TRANSLATION
           </div>

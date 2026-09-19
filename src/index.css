@@ -19,6 +19,11 @@ body, html {
   background-color: var(--color-bg);
   color: var(--color-text);
   font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
 }
 
 #root {
@@ -99,10 +104,13 @@ body, html {
 }
 
 .tv-header h1 {
-  font-size: 2.5rem;
+  font-size: 3rem;
   font-weight: 800;
-  letter-spacing: -0.05em;
-  text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff, #b3e5fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 4px 12px rgba(0, 255, 204, 0.2);
 }
 
 .live-badge {
@@ -142,17 +150,41 @@ body, html {
 
 .subtitle-text {
   text-align: center;
+  font-family: 'Outfit', sans-serif;
   font-size: 6rem; /* Huge for TV */
   font-weight: 800;
   color: #ffffff;
-  text-shadow: 0 8px 24px rgba(0,0,0,0.8);
-  transition: all 0.3s ease;
+  text-shadow: 0 8px 32px rgba(0,0,0,0.9), 0 0 20px rgba(0, 255, 204, 0.4);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
 }
 
 .subtitle-text.dim {
-  font-size: 3rem;
-  color: rgba(255,255,255,0.6);
-  font-weight: 600;
+  font-size: 2.5rem;
+  color: rgba(255,255,255,0.4);
+  font-weight: 500;
+  text-shadow: none;
+}
+
+/* Combo Indicators */
+.combo-indicators {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-top: 1rem;
+}
+
+.combo-dot {
+  font-size: 4rem;
+  color: var(--color-accent);
+  text-shadow: 0 0 15px var(--color-accent), 0 0 30px var(--color-accent);
+  animation: pulse-glow 1.5s infinite alternate;
+}
+
+@keyframes pulse-glow {
+  0% { opacity: 0.5; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1.1); }
 }
 
 /* Settings Toggle Button */
@@ -178,74 +210,4 @@ body, html {
   transform: scale(1.05);
 }
 
-/* Mode Toggle */
-.mode-toggle-container {
-  display: flex;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 30px;
-  padding: 4px;
-  backdrop-filter: blur(10px);
-}
-
-.mode-btn {
-  background: transparent;
-  border: none;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 26px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.mode-btn.active {
-  background: linear-gradient(135deg, #00ffcc, #00b3ff);
-  color: black;
-}
-
-/* Sentence Controls */
-.sentence-mode-ui {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-.sentence-controls {
-  display: flex;
-  gap: 16px;
-}
-
-.speak-btn {
-  background: linear-gradient(135deg, #00ffcc, #00b3ff);
-  color: black;
-  border: none;
-  border-radius: 12px;
-  padding: 12px 24px;
-  font-size: 20px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0, 255, 204, 0.3);
-  transition: transform 0.1s;
-}
-
-.speak-btn:active {
-  transform: scale(0.95);
-}
-
-.clear-btn {
-  background: rgba(255, 71, 87, 0.2);
-  color: #ff4757;
-  border: 1px solid rgba(255, 71, 87, 0.5);
-  border-radius: 12px;
-  padding: 12px 24px;
-  font-size: 20px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* Re-enable pointer events for UI buttons */
-.mode-toggle-container,
-.sentence-controls {
-  pointer-events: auto;
-}
+/* Removed obsolete Mode Toggle and Sentence Buttons CSS */

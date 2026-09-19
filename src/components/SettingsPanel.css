@@ -1,18 +1,20 @@
 .settings-panel {
   position: absolute;
   top: 0;
-  right: -400px; /* Hidden off screen by default */
-  width: 400px;
+  right: -450px; /* Hidden off screen by default */
+  width: 450px;
   height: 100vh;
-  background-color: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(10px);
+  background-color: rgba(10, 15, 30, 0.75);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
   color: white;
-  transition: right 0.3s ease-in-out;
+  transition: right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
   z-index: 100;
   display: flex;
   flex-direction: column;
-  box-shadow: -5px 0 25px rgba(0,0,0,0.5);
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.8);
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  font-family: 'Outfit', sans-serif;
 }
 
 .settings-panel.open {
@@ -103,7 +105,9 @@
 }
 
 .record-btn:hover:not(:disabled) {
-  opacity: 0.9;
+  opacity: 1;
+  transform: scale(1.02);
+  box-shadow: 0 4px 15px rgba(0, 255, 204, 0.4);
 }
 
 .record-btn:active:not(:disabled) {
