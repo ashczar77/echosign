@@ -1,49 +1,91 @@
 import type { Landmark } from '@mediapipe/tasks-vision';
 
-export interface SavedGesture {
-  label: string;
+export interface KnownPose {
+  id: string;
   featureVector: number[];
 }
 
+export interface SavedCombo {
+  label: string;
+  sequence: string[]; // array of pose IDs
+}
+
 export class CustomGestureEngine {
-  // Storage key for custom gestures
-  private static STORAGE_KEY = 'echosign_custom_gestures';
+  private static POSES_KEY = 'echosign_known_poses';
+  private static COMBOS_KEY = 'echosign_custom_combos';
   
-  // Load gestures from localStorage
-  static getSavedGestures(): SavedGesture[] {
+  // Load alphabet of poses
+  static getKnownPoses(): KnownPose[] {
     try {
-      const data = localStorage.getItem(this.STORAGE_KEY);
-      if (data) {
-        return JSON.parse(data) as SavedGesture[];
-      }
+      const data = localStorage.getItem(this.POSES_KEY);
+      if (data) return JSON.parse(data) as KnownPose[];
     } catch (e) {
-      console.error("Error reading from localStorage", e);
+      console.error("Error reading poses", e);
     }
     return [];
   }
 
-  // Save a gesture to localStorage
-  static saveGesture(label: string, featureVector: number[]) {
-    const gestures = this.getSavedGestures();
-    
-    // Check if label already exists and overwrite, otherwise append
-    const existingIndex = gestures.findIndex(g => g.label === label);
-    if (existingIndex >= 0) {
-      gestures[existingIndex].featureVector = featureVector;
-    } else {
-      gestures.push({ label, featureVector });
+  // Load saved combos
+  static getSavedCombos(): SavedCombo[] {
+    try {
+      const data = localStorage.getItem(this.COMBOS_KEY);
+      if (data) return JSON.parse(data) as SavedCombo[];
+    } catch (e) {
+      console.error("Error reading combos", e);
     }
-    
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(gestures));
+    return [];
   }
 
-  /**
-   * Normalizes the 3D hand landmarks into a scale/translation invariant 1D array of 63 features.
-   */
+  static deleteCombo(label: string) {
+    const combos = this.getSavedCombos().filter(c => c.label !== label);
+    localStorage.setItem(this.COMBOS_KEY, JSON.stringify(combos));
+  }
+
+  // Save a new combo, automatically quantizing vectors into KnownPoses
+  static saveCombo(label: string, rawVectors: number[][]) {
+    const poses = this.getKnownPoses();
+    const sequence: string[] = [];
+
+    for (const vector of rawVectors) {
+      // Find if this vector already matches an existing pose in our alphabet
+      let matchedId = null;
+      let minDistance = Infinity;
+
+      for (const pose of poses) {
+        const distance = this.calculateDistance(vector, pose.featureVector);
+        if (distance < minDistance) {
+          minDistance = distance;
+          matchedId = pose.id;
+        }
+      }
+
+      // If it's a tight match (< 0.8), reuse the existing pose ID
+      if (matchedId && minDistance < 0.8) {
+        sequence.push(matchedId);
+      } else {
+        // Otherwise, it's a brand new pose! Add it to the alphabet.
+        const newId = `pose_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        poses.push({ id: newId, featureVector: vector });
+        sequence.push(newId);
+      }
+    }
+
+    // Save updated alphabet
+    localStorage.setItem(this.POSES_KEY, JSON.stringify(poses));
+
+    // Save the combo
+    const combos = this.getSavedCombos();
+    const existingIndex = combos.findIndex(c => c.label === label);
+    if (existingIndex >= 0) {
+      combos[existingIndex].sequence = sequence;
+    } else {
+      combos.push({ label, sequence });
+    }
+    localStorage.setItem(this.COMBOS_KEY, JSON.stringify(combos));
+  }
+
   static normalizeLandmarks(landmarks: Landmark[]): number[] {
     if (!landmarks || landmarks.length !== 21) return [];
-
-    // 1. Translation: Make the wrist (landmark 0) the origin (0, 0, 0)
     const wrist = landmarks[0];
     const translated = landmarks.map(lm => ({
       x: lm.x - wrist.x,
@@ -51,30 +93,22 @@ export class CustomGestureEngine {
       z: lm.z - wrist.z
     }));
 
-    // 2. Scaling: Find the maximum absolute value across all coordinates
     let maxVal = 0;
     for (const lm of translated) {
       maxVal = Math.max(maxVal, Math.abs(lm.x), Math.abs(lm.y), Math.abs(lm.z));
     }
 
-    // 3. Normalize to [-1, 1] and flatten into a 1D array of 63 numbers
     const featureVector: number[] = [];
-    // Protect against divide by zero if hand is a single point (glitch)
     const scale = maxVal > 0 ? maxVal : 1; 
 
     for (const lm of translated) {
       featureVector.push(lm.x / scale, lm.y / scale, lm.z / scale);
     }
-
     return featureVector;
   }
 
-  /**
-   * Calculates the Euclidean distance between two feature vectors.
-   */
   static calculateDistance(vecA: number[], vecB: number[]): number {
     if (vecA.length !== vecB.length) return Infinity;
-    
     let sum = 0;
     for (let i = 0; i < vecA.length; i++) {
       const diff = vecA[i] - vecB[i];
@@ -84,31 +118,28 @@ export class CustomGestureEngine {
   }
 
   /**
-   * Compares the current landmarks against all saved gestures and returns the closest match.
+   * Matches the current hand to a KnownPose ID. Returns 'None' if unrecognized.
    */
-  static matchGesture(landmarks: Landmark[]): string {
+  static matchPose(landmarks: Landmark[]): string {
     const featureVector = this.normalizeLandmarks(landmarks);
     if (featureVector.length === 0) return 'None';
 
-    const gestures = this.getSavedGestures();
-    if (gestures.length === 0) return 'None';
+    const poses = this.getKnownPoses();
+    if (poses.length === 0) return 'None';
 
     let bestMatch = 'None';
     let minDistance = Infinity;
 
-    for (const gesture of gestures) {
-      const distance = this.calculateDistance(featureVector, gesture.featureVector);
-      
+    for (const pose of poses) {
+      const distance = this.calculateDistance(featureVector, pose.featureVector);
       if (distance < minDistance) {
         minDistance = distance;
-        bestMatch = gesture.label;
+        bestMatch = pose.id;
       }
     }
 
-    // Threshold: If the closest match is still too far away, reject it.
-    // A threshold of 1.5 is a reasonable starting point for normalized coordinates.
-    // This may need tuning based on testing.
-    if (minDistance < 1.5) {
+    // Stricter threshold of 0.8 ensures we don't accidentally match transitional messy shapes
+    if (minDistance < 0.8) {
       return bestMatch;
     }
 

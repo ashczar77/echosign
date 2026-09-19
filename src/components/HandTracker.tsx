@@ -8,24 +8,27 @@ interface HandTrackerProps {
 }
 
 export interface HandTrackerHandle {
-  teachSign: (label: string) => void;
+  getFeatureVector: () => number[] | null;
 }
 
 const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture }, ref) => {
+  const onGestureRef = useRef(onGesture);
+
+  useEffect(() => {
+    onGestureRef.current = onGesture;
+  }, [onGesture]);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const landmarkerRef = useRef<HandLandmarker | null>(null);
   const animationRef = useRef<number | undefined>(undefined);
   
-  // Pending teach request
-  const teachRequestRef = useRef<string | null>(null);
+  // The most recently normalized feature vector
+  const latestVectorRef = useRef<number[] | null>(null);
 
   useImperativeHandle(ref, () => ({
-    teachSign: (label: string) => {
-      teachRequestRef.current = label;
-      console.log(`[Teach Mode] Waiting for next frame to save as: ${label}`);
-    }
+    getFeatureVector: () => latestVectorRef.current
   }));
 
   useEffect(() => {
@@ -79,6 +82,7 @@ const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture
       let currentGesture: string = 'None';
       let gestureFrames = 0;
       let lastEmittedGesture: string = 'None';
+      let noneFrames = 0;
 
       const predict = () => {
         if (video.currentTime !== lastVideoTime) {
@@ -93,6 +97,7 @@ const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture
           canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
           
           if (results.landmarks && results.landmarks.length > 0) {
+            noneFrames = 0; // Reset none tracker
             const landmarks = results.landmarks[0]; // numHands is 1
             
             drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, {
@@ -106,43 +111,37 @@ const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture
               radius: 4
             });
             
-            // 1. Process Teach Mode if requested
-            if (teachRequestRef.current) {
-              const label = teachRequestRef.current;
-              const featureVector = CustomGestureEngine.normalizeLandmarks(landmarks);
-              CustomGestureEngine.saveGesture(label, featureVector);
-              console.log(`[Teach Mode] Saved custom gesture: ${label}`);
-              // Flash green to indicate success
-              canvasCtx.fillStyle = 'rgba(0, 255, 0, 0.5)';
-              canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-              teachRequestRef.current = null;
-            }
+            // Keep track of the latest vector for SettingsPanel to grab
+            latestVectorRef.current = CustomGestureEngine.normalizeLandmarks(landmarks);
             
-            // 2. Recognize raw gesture using Custom Engine
-            const rawGesture = CustomGestureEngine.matchGesture(landmarks);
+            // 2. Recognize raw pose using Custom Engine
+            const rawPoseId = CustomGestureEngine.matchPose(landmarks);
             
             // 3. Debounce logic
-            if (rawGesture === currentGesture) {
+            if (rawPoseId === currentGesture) {
               gestureFrames++;
               // A flat threshold for custom gestures
-              const threshold = 10; 
+              const threshold = 15; // Increased to 15 to require more stability
               
-              if (gestureFrames >= threshold && rawGesture !== lastEmittedGesture) {
-                lastEmittedGesture = rawGesture;
-                if (onGesture) {
-                  onGesture(rawGesture);
+              if (gestureFrames >= threshold && rawPoseId !== lastEmittedGesture) {
+                lastEmittedGesture = rawPoseId;
+                if (onGestureRef.current) {
+                  onGestureRef.current(rawPoseId);
                 }
               }
             } else {
-              currentGesture = rawGesture;
+              currentGesture = rawPoseId;
               gestureFrames = 0;
             }
           } else {
             // No hand detected
-            if (lastEmittedGesture !== 'None') {
-               lastEmittedGesture = 'None';
-               currentGesture = 'None';
-               gestureFrames = 0;
+            noneFrames++;
+            if (noneFrames >= 30) { // Require 1 full second of no hand to reset
+              if (lastEmittedGesture !== 'None') {
+                 lastEmittedGesture = 'None';
+                 currentGesture = 'None';
+                 gestureFrames = 0;
+              }
             }
           }
           canvasCtx.restore();

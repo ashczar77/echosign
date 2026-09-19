@@ -11,15 +11,16 @@ Our goal is simple: give everyone a voice in the living room.
 ## Features
 
 * **Adaptive Voice Proxy:** EchoSign translates gestures into spoken words in real time. Because the app speaks the translations out loud through your TV speakers, it acts as a voice proxy. This allows users to trigger nearby Echo devices naturally (for example, signing a gesture that speaks "Alexa, turn on the lights") without needing complex cloud integrations.
-* **Custom Sign Training:** We understand that accessibility is highly personal. Instead of forcing users to learn a rigid dictionary of signs, EchoSign features a Zero-Shot Learning engine. Users can literally teach the app their own comfortable shortcuts or regional signs in seconds.
-* **Cinematic 10-foot UI:** Designed specifically for the Fire TV ecosystem, the interface is built to be viewed from across the room, featuring high-contrast live subtitles and D-Pad remote navigation.
+* **Combo-Based Macro System:** Instead of forcing users to invent and memorize 50 unique hand poses for 50 different sentences, EchoSign uses a Combo System. Users can reuse a small handful of comfortable signs and string them together into sequences (e.g., ✌️ + 👍 = "Alexa, play jazz", but ✌️ + ✊ = "Alexa, turn off the TV").
+* **Vector Quantization AI:** EchoSign doesn't require pre-programmed alphabets. When you record a combo, the local AI extracts the 3D feature vectors of your hand. If it recognizes a shape you've used in a previous combo, it perfectly reuses it to save memory and increase tracking stability.
+* **Cinematic 10-foot UI:** Designed specifically for the Fire TV ecosystem, the interface is built to be viewed from across the room, featuring high-contrast live subtitles, combo-tracking indicators, and D-Pad remote navigation.
 * **100% Private and Serverless:** All 3D hand tracking and gesture matching runs locally on the TV processor. Custom gesture profiles are saved directly to the device, ensuring total privacy and zero cloud latency.
 
 ## How It Works
 
-1. **Teach a Sign:** Open the Settings menu, type a phrase, and hold up your hand to the camera. EchoSign maps your unique 3D hand skeleton to the phrase.
-2. **Sign:** Make the gesture in front of your Fire TV webcam.
-3. **Speak:** The app instantly recognizes your custom gesture, flashes the text on the screen, and speaks it aloud.
+1. **Build a Combo:** Open the Settings menu and type a full sentence you want to speak. Click "Record Gesture", perform your first sign, and take a breath. Click "Record Gesture" again to perform your second sign. Save the combo.
+2. **Perform:** In front of the live camera, simply perform your custom sequence of gestures. The app silently buffers your combo.
+3. **Hands-Free Translation:** Drop your hand. After 2 seconds of inactivity, the app evaluates your buffered sequence, instantly speaks the matching sentence out loud, and clears the screen!
 
 ## Getting Started
 

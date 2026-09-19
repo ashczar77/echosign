@@ -1,71 +1,72 @@
 import { useEffect, useState, useRef } from 'react';
 import HandTracker, { type HandTrackerHandle } from './components/HandTracker';
 import SettingsPanel from './components/SettingsPanel';
+import { CustomGestureEngine } from './utils/CustomGestureEngine';
 import { VoiceEngine } from './utils/VoiceEngine';
 
 function App() {
-  const [subtitle, setSubtitle] = useState<string>('Raise your hand to sign...');
+  const [comboBuffer, setComboBuffer] = useState<string[]>([]);
+  const [spokenText, setSpokenText] = useState<string>('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
   const handTrackerRef = useRef<HandTrackerHandle>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const clearTextTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize the Voice Engine on mount and add Fire TV Remote listeners
+  // Initialize the Voice Engine
   useEffect(() => {
     VoiceEngine.init();
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Fire TV Remote D-Pad mapping
-      switch (e.key) {
-        case 'ArrowUp':
-          console.log('[Fire TV Remote] D-Pad UP');
-          break;
-        case 'ArrowDown':
-          console.log('[Fire TV Remote] D-Pad DOWN');
-          break;
-        case 'ArrowLeft':
-          console.log('[Fire TV Remote] D-Pad LEFT');
-          break;
-        case 'ArrowRight':
-          console.log('[Fire TV Remote] D-Pad RIGHT');
-          break;
-        case 'Enter':
-          console.log('[Fire TV Remote] D-Pad SELECT');
-          // For now, Enter opens settings
-          setIsSettingsOpen(true);
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleGesture = (phrase: string) => {
-    if (phrase !== 'None') {
-      if (phrase && phrase !== subtitle) {
-        setSubtitle(phrase);
-        // Speak the translation aloud!
-        VoiceEngine.speak(phrase);
-      }
+  // Auto-evaluate combo when idle
+  useEffect(() => {
+    if (comboBuffer.length > 0) {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      
+      timeoutRef.current = setTimeout(() => {
+        // Evaluate the combo sequence against our dictionary
+        const combos = CustomGestureEngine.getSavedCombos();
+        const match = combos.find(c => JSON.stringify(c.sequence) === JSON.stringify(comboBuffer));
+        
+        if (match) {
+          VoiceEngine.speak(match.label);
+          setSpokenText(match.label);
+          
+          // Clear text after a few seconds
+          if (clearTextTimeoutRef.current) clearTimeout(clearTextTimeoutRef.current);
+          clearTextTimeoutRef.current = setTimeout(() => setSpokenText(''), 4000);
+        }
+        
+        // Clear the combo buffer regardless
+        setComboBuffer([]); 
+      }, 2000); // 2 seconds of inactivity triggers evaluation
     }
-  };
+    
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [comboBuffer]);
 
-  const handleTeachSign = (phrase: string) => {
-    if (handTrackerRef.current) {
-      handTrackerRef.current.teachSign(phrase);
-    }
+  const handleGesture = (poseId: string) => {
+    if (poseId === 'None') return;
+
+    setComboBuffer(prev => {
+      // Prevent consecutive duplicate poses from noise
+      if (prev.length > 0 && prev[prev.length - 1] === poseId) {
+        return prev;
+      }
+      return [...prev, poseId];
+    });
   };
 
   return (
     <div className="tv-container">
-      {/* Background Camera */}
       <div className="camera-layer">
         <HandTracker ref={handTrackerRef} onGesture={handleGesture} />
       </div>
 
-      {/* Cinematic Gradient Overlay */}
       <div className="gradient-overlay"></div>
 
-      {/* 10-foot UI Content */}
       <div className="ui-layer">
         <header className="tv-header">
           <h1>EchoSign</h1>
@@ -75,9 +76,19 @@ function App() {
         </header>
 
         <div className="subtitle-container">
-          <p className={`subtitle-text ${subtitle === 'Raise your hand to sign...' ? 'dim' : ''}`}>
-            {subtitle}
-          </p>
+          <div className="sentence-mode-ui">
+            {comboBuffer.length > 0 ? (
+              <div className="combo-indicators">
+                {comboBuffer.map((_, i) => (
+                  <span key={i} className="combo-dot" style={{ fontSize: '3rem', color: '#00ffcc', marginRight: '10px' }}>•</span>
+                ))}
+              </div>
+            ) : (
+              <p className={`subtitle-text ${!spokenText ? 'dim' : ''}`}>
+                {spokenText || 'Perform a combo to speak...'}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -88,7 +99,7 @@ function App() {
       <SettingsPanel 
         isOpen={isSettingsOpen} 
         onClose={() => setIsSettingsOpen(false)}
-        onTeachSign={handleTeachSign}
+        getFeatureVector={() => handTrackerRef.current?.getFeatureVector() || null}
       />
     </div>
   );

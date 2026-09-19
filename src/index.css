@@ -177,3 +177,75 @@ body, html {
   background: rgba(255, 255, 255, 0.1);
   transform: scale(1.05);
 }
+
+/* Mode Toggle */
+.mode-toggle-container {
+  display: flex;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  padding: 4px;
+  backdrop-filter: blur(10px);
+}
+
+.mode-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 26px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.mode-btn.active {
+  background: linear-gradient(135deg, #00ffcc, #00b3ff);
+  color: black;
+}
+
+/* Sentence Controls */
+.sentence-mode-ui {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.sentence-controls {
+  display: flex;
+  gap: 16px;
+}
+
+.speak-btn {
+  background: linear-gradient(135deg, #00ffcc, #00b3ff);
+  color: black;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 255, 204, 0.3);
+  transition: transform 0.1s;
+}
+
+.speak-btn:active {
+  transform: scale(0.95);
+}
+
+.clear-btn {
+  background: rgba(255, 71, 87, 0.2);
+  color: #ff4757;
+  border: 1px solid rgba(255, 71, 87, 0.5);
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Re-enable pointer events for UI buttons */
+.mode-toggle-container,
+.sentence-controls {
+  pointer-events: auto;
+}
