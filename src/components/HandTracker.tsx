@@ -1,17 +1,32 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { GestureRecognizer, FilesetResolver, DrawingUtils, HandLandmarker } from '@mediapipe/tasks-vision';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import { HandLandmarker, FilesetResolver, DrawingUtils, Landmark } from '@mediapipe/tasks-vision';
+import { CustomGestureEngine } from '../utils/CustomGestureEngine';
 import './HandTracker.css';
 
 interface HandTrackerProps {
   onGesture?: (gesture: string) => void;
 }
 
-const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
+export interface HandTrackerHandle {
+  teachSign: (label: string) => void;
+}
+
+const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const recognizerRef = useRef<GestureRecognizer | null>(null);
+  const landmarkerRef = useRef<HandLandmarker | null>(null);
   const animationRef = useRef<number>();
+  
+  // Pending teach request
+  const teachRequestRef = useRef<string | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    teachSign: (label: string) => {
+      teachRequestRef.current = label;
+      console.log(`[Teach Mode] Waiting for next frame to save as: ${label}`);
+    }
+  }));
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -20,9 +35,9 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
       const vision = await FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
       );
-      recognizerRef.current = await GestureRecognizer.createFromOptions(vision, {
+      landmarkerRef.current = await HandLandmarker.createFromOptions(vision, {
         baseOptions: {
-          modelAssetPath: "/gesture_recognizer.task",
+          modelAssetPath: "/hand_landmarker.task",
           delegate: "GPU"
         },
         runningMode: "VIDEO",
@@ -41,7 +56,6 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
           videoRef.current.srcObject = stream;
           videoRef.current.onloadedmetadata = () => {
             videoRef.current?.play();
-            // Start detection loop
             startDetection();
           };
         }
@@ -54,9 +68,9 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const canvasCtx = canvas?.getContext("2d");
-      const recognizer = recognizerRef.current;
+      const landmarker = landmarkerRef.current;
 
-      if (!recognizer || !video || !canvas || !canvasCtx) return;
+      if (!landmarker || !video || !canvas || !canvasCtx) return;
 
       const drawingUtils = new DrawingUtils(canvasCtx);
       let lastVideoTime = -1;
@@ -65,80 +79,66 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
       let currentGesture: string = 'None';
       let gestureFrames = 0;
       let lastEmittedGesture: string = 'None';
-      
-      // Dynamic debounce thresholds based on the type of gesture
-      const DEBOUNCE_THRESHOLDS: Record<string, number> = {
-        'None': 2,
-        'Closed_Fist': 12,
-        'Open_Palm': 10,
-        'Pointing_Up': 5,
-        'Thumb_Down': 5,
-        'Thumb_Up': 5,
-        'Victory': 5,
-        'ILoveYou': 5
-      };
 
       const predict = () => {
         if (video.currentTime !== lastVideoTime) {
           lastVideoTime = video.currentTime;
           
-          // Match canvas resolution to video
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
           
-          const results = recognizer.recognizeForVideo(video, performance.now());
+          const results = landmarker.detectForVideo(video, performance.now());
           
           canvasCtx.save();
           canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
           
           if (results.landmarks && results.landmarks.length > 0) {
-            for (let i = 0; i < results.landmarks.length; i++) {
-              const landmarks = results.landmarks[i];
-              // Note: Using HandLandmarker.HAND_CONNECTIONS to safely avoid undefined errors
-              drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, {
-                color: "#00ffcc",
-                lineWidth: 4
-              });
-              drawingUtils.drawLandmarks(landmarks, {
-                color: "#ffffff",
-                fillColor: "#00ffcc",
-                lineWidth: 2,
-                radius: 4
-              });
+            const landmarks = results.landmarks[0]; // numHands is 1
+            
+            drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, {
+              color: "#00ffcc",
+              lineWidth: 4
+            });
+            drawingUtils.drawLandmarks(landmarks, {
+              color: "#ffffff",
+              fillColor: "#00ffcc",
+              lineWidth: 2,
+              radius: 4
+            });
+            
+            // 1. Process Teach Mode if requested
+            if (teachRequestRef.current) {
+              const label = teachRequestRef.current;
+              const featureVector = CustomGestureEngine.normalizeLandmarks(landmarks);
+              CustomGestureEngine.saveGesture(label, featureVector);
+              console.log(`[Teach Mode] Saved custom gesture: ${label}`);
+              // Flash green to indicate success
+              canvasCtx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+              canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+              teachRequestRef.current = null;
+            }
+            
+            // 2. Recognize raw gesture using Custom Engine
+            const rawGesture = CustomGestureEngine.matchGesture(landmarks);
+            
+            // 3. Debounce logic
+            if (rawGesture === currentGesture) {
+              gestureFrames++;
+              // A flat threshold for custom gestures
+              const threshold = 10; 
               
-              // 1. Get raw gesture from MediaPipe
-              let rawGesture = 'None';
-              if (results.gestures && results.gestures[i] && results.gestures[i].length > 0) {
-                // MediaPipe returns an array of recognized gestures for the hand, sorted by confidence.
-                // We take the top one.
-                const topGesture = results.gestures[i][0];
-                // Only accept if confidence is above 60%
-                if (topGesture.score > 0.6) {
-                  rawGesture = topGesture.categoryName;
+              if (gestureFrames >= threshold && rawGesture !== lastEmittedGesture) {
+                lastEmittedGesture = rawGesture;
+                if (onGesture) {
+                  onGesture(rawGesture);
                 }
               }
-              
-              // 2. Debounce logic
-              if (rawGesture === currentGesture) {
-                gestureFrames++;
-                const threshold = DEBOUNCE_THRESHOLDS[rawGesture] || 10;
-                
-                if (gestureFrames >= threshold && rawGesture !== lastEmittedGesture) {
-                  // We have a stable new gesture!
-                  lastEmittedGesture = rawGesture;
-                  if (onGesture) {
-                    onGesture(rawGesture);
-                  }
-                  console.log(`[Debounced Trigger] Fired: ${rawGesture}`);
-                }
-              } else {
-                // Gesture changed, reset counter
-                currentGesture = rawGesture;
-                gestureFrames = 0;
-              }
+            } else {
+              currentGesture = rawGesture;
+              gestureFrames = 0;
             }
           } else {
-            // No hand detected, reset everything to None
+            // No hand detected
             if (lastEmittedGesture !== 'None') {
                lastEmittedGesture = 'None';
                currentGesture = 'None';
@@ -153,7 +153,6 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
       predict();
     };
 
-    // Initialize in sequence
     initializeMediaPipe().then(() => {
       startCamera();
     });
@@ -161,7 +160,7 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       if (stream) stream.getTracks().forEach(track => track.stop());
-      if (recognizerRef.current) recognizerRef.current.close();
+      if (landmarkerRef.current) landmarkerRef.current.close();
     };
   }, []);
 
@@ -169,7 +168,7 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
     <div className="hand-tracker-container glass-panel">
       {!isLoaded && (
         <div className="tracker-overlay">
-          <h2>Initializing AI Engine...</h2>
+          <h2>Initializing Custom AI Engine...</h2>
         </div>
       )}
       <video 
@@ -185,6 +184,6 @@ const HandTracker: React.FC<HandTrackerProps> = ({ onGesture }) => {
       ></canvas>
     </div>
   );
-};
+});
 
 export default HandTracker;

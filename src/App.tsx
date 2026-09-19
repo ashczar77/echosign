@@ -9,7 +9,8 @@ const SIGN_DICTIONARY: Record<string, string> = {
   'Thumb_Down': 'No',
   'Victory': 'Peace',
   'Closed_Fist': 'Stop',
-  'Open_Palm': 'Hello'
+  'Open_Palm': 'Hello',
+  'Pointing_Up': 'Alexa, what is the weather?'
 };
 
 function App() {
