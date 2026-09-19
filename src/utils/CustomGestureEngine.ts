@@ -1,4 +1,4 @@
-import { Landmark } from '@mediapipe/tasks-vision';
+import type { Landmark } from '@mediapipe/tasks-vision';
 
 export interface SavedGesture {
   label: string;

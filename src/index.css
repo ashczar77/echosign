@@ -91,11 +91,11 @@ body, html {
   pointer-events: none; /* Let clicks pass through to video if needed */
 }
 
-/* Header */
 .tv-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-right: 160px; /* Make room for the Settings button */
 }
 
 .tv-header h1 {
@@ -134,11 +134,14 @@ body, html {
 /* Subtitle Area */
 .subtitle-container {
   width: 100%;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin-bottom: 2rem;
 }
 
 .subtitle-text {
+  text-align: center;
   font-size: 6rem; /* Huge for TV */
   font-weight: 800;
   color: #ffffff;
@@ -150,4 +153,27 @@ body, html {
   font-size: 3rem;
   color: rgba(255,255,255,0.6);
   font-weight: 600;
+}
+
+/* Settings Toggle Button */
+.settings-toggle {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 30px;
+  padding: 12px 24px;
+  font-size: 18px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  z-index: 50;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s;
+}
+
+.settings-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
 }

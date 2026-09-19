@@ -1,13 +1,14 @@
 .hand-tracker-container {
   position: relative;
   width: 100%;
-  max-width: 640px;
-  aspect-ratio: 16/9;
+  height: 100%;
   overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
+  background: #000;
 }
+
 
 .webcam-feed {
   position: absolute;

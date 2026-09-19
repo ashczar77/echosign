@@ -1,20 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import HandTracker from './components/HandTracker';
+import { useEffect, useState, useRef } from 'react';
+import HandTracker, { type HandTrackerHandle } from './components/HandTracker';
+import SettingsPanel from './components/SettingsPanel';
 import { VoiceEngine } from './utils/VoiceEngine';
-
-// Mapping raw gesture strings to their English meaning
-const SIGN_DICTIONARY: Record<string, string> = {
-  'ILoveYou': 'I love you',
-  'Thumb_Up': 'Yes',
-  'Thumb_Down': 'No',
-  'Victory': 'Peace',
-  'Closed_Fist': 'Stop',
-  'Open_Palm': 'Hello',
-  'Pointing_Up': 'Alexa, what is the weather?'
-};
 
 function App() {
   const [subtitle, setSubtitle] = useState<string>('Raise your hand to sign...');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const handTrackerRef = useRef<HandTrackerHandle>(null);
 
   // Initialize the Voice Engine on mount and add Fire TV Remote listeners
   useEffect(() => {
@@ -37,6 +29,8 @@ function App() {
           break;
         case 'Enter':
           console.log('[Fire TV Remote] D-Pad SELECT');
+          // For now, Enter opens settings
+          setIsSettingsOpen(true);
           break;
       }
     };
@@ -45,14 +39,19 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleGesture = (gesture: string) => {
-    if (gesture !== 'None') {
-      const translation = SIGN_DICTIONARY[gesture];
-      if (translation && translation !== subtitle) {
-        setSubtitle(translation);
+  const handleGesture = (phrase: string) => {
+    if (phrase !== 'None') {
+      if (phrase && phrase !== subtitle) {
+        setSubtitle(phrase);
         // Speak the translation aloud!
-        VoiceEngine.speak(translation);
+        VoiceEngine.speak(phrase);
       }
+    }
+  };
+
+  const handleTeachSign = (phrase: string) => {
+    if (handTrackerRef.current) {
+      handTrackerRef.current.teachSign(phrase);
     }
   };
 
@@ -60,7 +59,7 @@ function App() {
     <div className="tv-container">
       {/* Background Camera */}
       <div className="camera-layer">
-        <HandTracker onGesture={handleGesture} />
+        <HandTracker ref={handTrackerRef} onGesture={handleGesture} />
       </div>
 
       {/* Cinematic Gradient Overlay */}
@@ -81,6 +80,16 @@ function App() {
           </p>
         </div>
       </div>
+
+      <button className="settings-toggle" onClick={() => setIsSettingsOpen(true)}>
+        ⚙️ Settings
+      </button>
+
+      <SettingsPanel 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)}
+        onTeachSign={handleTeachSign}
+      />
     </div>
   );
 }

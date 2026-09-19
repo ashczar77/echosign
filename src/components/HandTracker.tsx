@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
-import { HandLandmarker, FilesetResolver, DrawingUtils, Landmark } from '@mediapipe/tasks-vision';
+import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import { HandLandmarker, FilesetResolver, DrawingUtils } from '@mediapipe/tasks-vision';
 import { CustomGestureEngine } from '../utils/CustomGestureEngine';
 import './HandTracker.css';
 
@@ -16,7 +16,7 @@ const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const landmarkerRef = useRef<HandLandmarker | null>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
   
   // Pending teach request
   const teachRequestRef = useRef<string | null>(null);
