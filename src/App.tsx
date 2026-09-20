@@ -125,6 +125,7 @@ function App() {
         isOpen={isSettingsOpen} 
         onClose={() => setIsSettingsOpen(false)}
         getFeatureVector={() => handTrackerRef.current?.getFeatureVector() || null}
+        getSnapshot={() => handTrackerRef.current?.getSnapshot() || null}
         onSwitchProfile={() => {
           ProfileEngine.setActiveProfileId(''); // Clear active session
           setActiveProfileId(null);

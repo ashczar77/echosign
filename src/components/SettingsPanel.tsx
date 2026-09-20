@@ -6,14 +6,18 @@ interface SettingsPanelProps {
   isOpen: boolean;
   onClose: () => void;
   getFeatureVector: () => number[] | null;
+  getSnapshot: () => string | null;
   onSwitchProfile: () => void;
 }
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatureVector, onSwitchProfile }) => {
+import { ProfileEngine } from '../utils/ProfileEngine';
+
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatureVector, getSnapshot, onSwitchProfile }) => {
   const [newPhrase, setNewPhrase] = useState('');
   const [newWebhook, setNewWebhook] = useState('');
   const [savedCombos, setSavedCombos] = useState<SavedCombo[]>([]);
   const [pendingVectors, setPendingVectors] = useState<number[][]>([]);
+  const [pendingThumbnails, setPendingThumbnails] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const [isRecording, setIsRecording] = useState(false);
@@ -46,8 +50,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
         
         // Take the snapshot NOW
         const vec = getFeatureVector();
-        if (vec) {
+        const img = getSnapshot();
+        if (vec && img) {
           setPendingVectors(prev => [...prev, vec]);
+          setPendingThumbnails(prev => [...prev, img]);
         } else {
           console.error("No hand detected during snapshot");
         }
@@ -73,6 +79,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
         setNewPhrase('');
         setNewWebhook('');
         setPendingVectors([]);
+        setPendingThumbnails([]);
         refreshCombos();
       } catch (err: any) {
         setErrorMessage(err.message || "Failed to save combo.");
@@ -83,6 +90,36 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
   const handleDelete = (label: string) => {
     CustomGestureEngine.deleteCombo(label);
     refreshCombos();
+  };
+
+  const handleEdit = (combo: SavedCombo) => {
+    setNewPhrase(combo.label);
+    setNewWebhook(combo.webhookUrl || '');
+    setPendingVectors([]);
+    setPendingThumbnails([]);
+    setErrorMessage("Editing loaded. Re-record gestures if you want to change the sequence.");
+  };
+
+  const handleExport = () => {
+    ProfileEngine.exportActiveProfileData();
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        if (event.target?.result) {
+          ProfileEngine.importActiveProfileData(event.target.result as string);
+          refreshCombos();
+          setErrorMessage("Profile imported successfully!");
+        }
+      } catch (err) {
+        setErrorMessage("Failed to import profile. Invalid file.");
+      }
+    };
+    reader.readAsText(file);
   };
 
   return (
@@ -109,6 +146,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
           <input 
             type="text" 
             placeholder="e.g. Alexa, turn on the lights" 
+            maxLength={60}
             value={newPhrase}
             onChange={(e) => setNewPhrase(e.target.value)}
             disabled={isRecording || pendingVectors.length > 0}
@@ -117,6 +155,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
           <input 
             type="text" 
             placeholder="Optional Webhook URL (e.g. IFTTT, Home Assistant)" 
+            maxLength={150}
             value={newWebhook}
             onChange={(e) => setNewWebhook(e.target.value)}
             disabled={isRecording || pendingVectors.length > 0}
@@ -133,10 +172,18 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
             <button 
               className={`record-btn ${isRecording ? 'recording' : ''}`}
               onClick={handleRecordStep}
-              disabled={isRecording || !newPhrase.trim()}
+              disabled={isRecording || !newPhrase.trim() || pendingVectors.length >= 5}
             >
-              {countdown !== null ? `Recording in ${countdown}...` : `Record Gesture ${pendingVectors.length + 1}`}
+              {pendingVectors.length >= 5 ? "Sequence Full (5 Max)" : (countdown !== null ? `Recording in ${countdown}...` : `Record Gesture ${pendingVectors.length + 1}`)}
             </button>
+
+            {pendingThumbnails.length > 0 && (
+              <div style={{ display: 'flex', gap: '5px', overflowX: 'auto', padding: '5px 0' }}>
+                {pendingThumbnails.map((thumb, idx) => (
+                  <img key={idx} src={thumb} alt={`Step ${idx+1}`} style={{ height: '50px', width: '50px', borderRadius: '4px', border: '1px solid #00ffcc', objectFit: 'cover' }} />
+                ))}
+              </div>
+            )}
 
             {pendingVectors.length > 0 && (
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -150,6 +197,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
                 <button 
                   onClick={() => {
                     setPendingVectors([]);
+                    setPendingThumbnails([]);
                     setErrorMessage(null);
                   }}
                   style={{ flex: 1, padding: '10px', background: 'transparent', color: '#ff4757', border: '1px solid #ff4757', borderRadius: '8px', cursor: 'pointer' }}
@@ -175,11 +223,24 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
                       {c.sequence.length} gestures {c.webhookUrl && ' • 🔗 Webhook'}
                     </span>
                   </div>
-                  <button className="delete-btn" onClick={() => handleDelete(c.label)}>Delete</button>
+                  <div style={{ display: 'flex', gap: '5px' }}>
+                    <button className="delete-btn" style={{ background: '#333', color: 'white' }} onClick={() => handleEdit(c)}>Edit</button>
+                    <button className="delete-btn" onClick={() => handleDelete(c.label)}>Delete</button>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
+          
+          <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '10px' }}>
+            <button onClick={handleExport} style={{ flex: 1, padding: '8px', background: 'transparent', color: '#00ffcc', border: '1px solid #00ffcc', borderRadius: '8px', cursor: 'pointer' }}>
+              ⬇️ Export Profile
+            </button>
+            <label style={{ flex: 1, padding: '8px', background: 'transparent', color: '#00b3ff', border: '1px solid #00b3ff', borderRadius: '8px', cursor: 'pointer', textAlign: 'center' }}>
+              ⬆️ Import Profile
+              <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
+            </label>
+          </div>
         </div>
       </div>
     </div>

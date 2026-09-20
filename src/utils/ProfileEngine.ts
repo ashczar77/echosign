@@ -46,4 +46,33 @@ export class ProfileEngine {
   static setActiveProfileId(id: string) {
     localStorage.setItem(this.ACTIVE_KEY, id);
   }
+
+  static exportActiveProfileData() {
+    const id = this.getActiveProfileId();
+    if (!id) return;
+    
+    const data = {
+      poses: localStorage.getItem(`echosign_poses_${id}`),
+      combos: localStorage.getItem(`echosign_combos_${id}`)
+    };
+    
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `echosign_backup_${id}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  static importActiveProfileData(jsonString: string) {
+    const id = this.getActiveProfileId();
+    if (!id) throw new Error("No active profile");
+    
+    const data = JSON.parse(jsonString);
+    if (data.poses) localStorage.setItem(`echosign_poses_${id}`, data.poses);
+    if (data.combos) localStorage.setItem(`echosign_combos_${id}`, data.combos);
+  }
 }

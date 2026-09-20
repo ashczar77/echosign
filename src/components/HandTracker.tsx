@@ -9,6 +9,7 @@ interface HandTrackerProps {
 
 export interface HandTrackerHandle {
   getFeatureVector: () => number[] | null;
+  getSnapshot: () => string | null;
 }
 
 const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture }, ref) => {
@@ -28,7 +29,13 @@ const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture
   const latestVectorRef = useRef<number[] | null>(null);
 
   useImperativeHandle(ref, () => ({
-    getFeatureVector: () => latestVectorRef.current
+    getFeatureVector: () => latestVectorRef.current,
+    getSnapshot: () => {
+      if (canvasRef.current) {
+        return canvasRef.current.toDataURL('image/jpeg', 0.4);
+      }
+      return null;
+    }
   }));
 
   useEffect(() => {
