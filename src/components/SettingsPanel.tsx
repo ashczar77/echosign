@@ -14,6 +14,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
   const [newWebhook, setNewWebhook] = useState('');
   const [savedCombos, setSavedCombos] = useState<SavedCombo[]>([]);
   const [pendingVectors, setPendingVectors] = useState<number[][]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const [isRecording, setIsRecording] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -59,12 +60,23 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
   };
 
   const handleSaveCombo = () => {
+    setErrorMessage(null);
     if (newPhrase.trim() && pendingVectors.length > 0) {
-      CustomGestureEngine.saveCombo(newPhrase.trim(), pendingVectors, newWebhook);
-      setNewPhrase('');
-      setNewWebhook('');
-      setPendingVectors([]);
-      refreshCombos();
+      const collisionLabel = CustomGestureEngine.checkCollision(pendingVectors, newPhrase.trim());
+      if (collisionLabel) {
+        setErrorMessage(`Collision! This exact gesture sequence is already used for: "${collisionLabel}"`);
+        return;
+      }
+      
+      try {
+        CustomGestureEngine.saveCombo(newPhrase.trim(), pendingVectors, newWebhook);
+        setNewPhrase('');
+        setNewWebhook('');
+        setPendingVectors([]);
+        refreshCombos();
+      } catch (err: any) {
+        setErrorMessage(err.message || "Failed to save combo.");
+      }
     }
   };
 
@@ -111,6 +123,12 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
             style={{ fontSize: '12px', padding: '8px' }}
           />
           
+          {errorMessage && (
+            <div style={{ padding: '10px', background: 'rgba(255, 71, 87, 0.2)', border: '1px solid #ff4757', color: '#ff4757', borderRadius: '8px', fontSize: '14px', marginBottom: '10px' }}>
+              ⚠️ {errorMessage}
+            </div>
+          )}
+
           <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <button 
               className={`record-btn ${isRecording ? 'recording' : ''}`}
@@ -130,7 +148,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
                   Save Combo ({pendingVectors.length} steps)
                 </button>
                 <button 
-                  onClick={() => setPendingVectors([])}
+                  onClick={() => {
+                    setPendingVectors([]);
+                    setErrorMessage(null);
+                  }}
                   style={{ flex: 1, padding: '10px', background: 'transparent', color: '#ff4757', border: '1px solid #ff4757', borderRadius: '8px', cursor: 'pointer' }}
                 >
                   Reset

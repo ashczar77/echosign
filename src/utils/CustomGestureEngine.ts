@@ -50,8 +50,55 @@ export class CustomGestureEngine {
     localStorage.setItem(this.getCombosKey(), JSON.stringify(combos));
   }
 
+  // Checks if a sequence of vectors already matches an existing combo.
+  // Returns the label of the colliding combo, or null if it's safe.
+  static checkCollision(rawVectors: number[][], currentLabel: string): string | null {
+    const poses = this.getKnownPoses();
+    const sequence: string[] = [];
+
+    for (const vector of rawVectors) {
+      let matchedId = null;
+      let minDistance = Infinity;
+
+      for (const pose of poses) {
+        const distance = this.calculateDistance(vector, pose.featureVector);
+        if (distance < minDistance) {
+          minDistance = distance;
+          matchedId = pose.id;
+        }
+      }
+      
+      // If we don't have a tight match, it's a new pose, so it can't possibly collide with an existing combo yet.
+      if (matchedId && minDistance < 0.8) {
+        sequence.push(matchedId);
+      } else {
+        return null; // A brand new pose means this sequence is unique.
+      }
+    }
+
+    const combos = this.getSavedCombos();
+    const match = combos.find(c => c.label !== currentLabel && JSON.stringify(c.sequence) === JSON.stringify(sequence));
+    return match ? match.label : null;
+  }
+
   // Save a new combo, automatically quantizing vectors into KnownPoses
   static saveCombo(label: string, rawVectors: number[][], webhookUrl?: string) {
+    const combos = this.getSavedCombos();
+    const existingIndex = combos.findIndex(c => c.label === label);
+    
+    // Hard Cap of 50 Combos to prevent LocalStorage Quota Exceeded crashes
+    if (existingIndex < 0 && combos.length >= 50) {
+      throw new Error("Profile full! (50/50). Please delete some old combos to add more.");
+    }
+    
+    if (webhookUrl && webhookUrl.trim() !== '') {
+      const url = webhookUrl.trim();
+      // Basic URL validation to prevent malformed fetches. (Allows localhost/IPs).
+      if (!/^https?:\/\/.+/.test(url) && !url.includes('.')) {
+        throw new Error("Invalid Webhook URL format.");
+      }
+    }
+
     const poses = this.getKnownPoses();
     const sequence: string[] = [];
 
@@ -83,8 +130,6 @@ export class CustomGestureEngine {
     localStorage.setItem(this.getPosesKey(), JSON.stringify(poses));
 
     // Save the combo
-    const combos = this.getSavedCombos();
-    const existingIndex = combos.findIndex(c => c.label === label);
     
     const newCombo: SavedCombo = { label, sequence };
     if (webhookUrl && webhookUrl.trim() !== '') {

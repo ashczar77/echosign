@@ -83,10 +83,13 @@ const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture
       let gestureFrames = 0;
       let lastEmittedGesture: string = 'None';
       let noneFrames = 0;
+      let frameCounter = 0;
+      let lastCalculatedPoseId = 'None';
 
       const predict = () => {
         if (video.currentTime !== lastVideoTime) {
           lastVideoTime = video.currentTime;
+          frameCounter++;
           
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
@@ -114,23 +117,26 @@ const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture
             // Keep track of the latest vector for SettingsPanel to grab
             latestVectorRef.current = CustomGestureEngine.normalizeLandmarks(landmarks);
             
-            // 2. Recognize raw pose using Custom Engine
-            const rawPoseId = CustomGestureEngine.matchPose(landmarks);
+            // 2. Recognize raw pose using Custom Engine (THROTTLED for Performance)
+            // Instead of doing expensive O(N) math 60 times a second, we do it every 5 frames (~12fps)
+            if (frameCounter % 5 === 0) {
+              lastCalculatedPoseId = CustomGestureEngine.matchPose(landmarks);
+            }
             
             // 3. Debounce logic
-            if (rawPoseId === currentGesture) {
+            if (lastCalculatedPoseId === currentGesture) {
               gestureFrames++;
-              // A flat threshold for custom gestures
-              const threshold = 15; // Increased to 15 to require more stability
+              // A flat threshold for custom gestures (Adjusted slightly for throttled framerate)
+              const threshold = 15; 
               
-              if (gestureFrames >= threshold && rawPoseId !== lastEmittedGesture) {
-                lastEmittedGesture = rawPoseId;
+              if (gestureFrames >= threshold && lastCalculatedPoseId !== lastEmittedGesture) {
+                lastEmittedGesture = lastCalculatedPoseId;
                 if (onGestureRef.current) {
-                  onGestureRef.current(rawPoseId);
+                  onGestureRef.current(lastCalculatedPoseId);
                 }
               }
             } else {
-              currentGesture = rawPoseId;
+              currentGesture = lastCalculatedPoseId;
               gestureFrames = 0;
             }
           } else {
@@ -140,6 +146,7 @@ const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture
               if (lastEmittedGesture !== 'None') {
                  lastEmittedGesture = 'None';
                  currentGesture = 'None';
+                 lastCalculatedPoseId = 'None';
                  gestureFrames = 0;
               }
             }
