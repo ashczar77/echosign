@@ -37,9 +37,17 @@ function App() {
           
           // Silently trigger webhook if configured (The Enterprise feature!)
           if (match.webhookUrl) {
-            fetch(match.webhookUrl, { method: 'POST', mode: 'no-cors' }).catch(err => {
-              console.error("Failed to trigger webhook:", err);
-            });
+            try {
+              let urlToFetch = match.webhookUrl;
+              if (!urlToFetch.startsWith('http://') && !urlToFetch.startsWith('https://')) {
+                urlToFetch = 'https://' + urlToFetch;
+              }
+              fetch(urlToFetch, { method: 'POST', mode: 'no-cors' }).catch(err => {
+                console.error("Failed to trigger webhook:", err);
+              });
+            } catch (e) {
+              console.error("Synchronous error triggering webhook:", e);
+            }
           }
           
           // Clear text after a few seconds
