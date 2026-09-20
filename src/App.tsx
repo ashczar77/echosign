@@ -1,10 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import HandTracker, { type HandTrackerHandle } from './components/HandTracker';
 import SettingsPanel from './components/SettingsPanel';
+import ProfileSelector from './components/ProfileSelector';
 import { CustomGestureEngine } from './utils/CustomGestureEngine';
+import { ProfileEngine } from './utils/ProfileEngine';
 import { VoiceEngine } from './utils/VoiceEngine';
 
 function App() {
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(ProfileEngine.getActiveProfileId());
   const [comboBuffer, setComboBuffer] = useState<string[]>([]);
   const [spokenText, setSpokenText] = useState<string>('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -32,6 +35,13 @@ function App() {
           VoiceEngine.speak(match.label);
           setSpokenText(match.label);
           
+          // Silently trigger webhook if configured (The Enterprise feature!)
+          if (match.webhookUrl) {
+            fetch(match.webhookUrl, { method: 'POST', mode: 'no-cors' }).catch(err => {
+              console.error("Failed to trigger webhook:", err);
+            });
+          }
+          
           // Clear text after a few seconds
           if (clearTextTimeoutRef.current) clearTimeout(clearTextTimeoutRef.current);
           clearTextTimeoutRef.current = setTimeout(() => setSpokenText(''), 4000);
@@ -58,6 +68,10 @@ function App() {
       return [...prev, poseId];
     });
   };
+
+  if (!activeProfileId) {
+    return <ProfileSelector onProfileSelect={(id) => setActiveProfileId(id)} />;
+  }
 
   return (
     <div className="tv-container">
@@ -103,6 +117,11 @@ function App() {
         isOpen={isSettingsOpen} 
         onClose={() => setIsSettingsOpen(false)}
         getFeatureVector={() => handTrackerRef.current?.getFeatureVector() || null}
+        onSwitchProfile={() => {
+          ProfileEngine.setActiveProfileId(''); // Clear active session
+          setActiveProfileId(null);
+          setIsSettingsOpen(false);
+        }}
       />
     </div>
   );

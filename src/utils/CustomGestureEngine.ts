@@ -1,4 +1,5 @@
 import type { Landmark } from '@mediapipe/tasks-vision';
+import { ProfileEngine } from './ProfileEngine';
 
 export interface KnownPose {
   id: string;
@@ -8,16 +9,24 @@ export interface KnownPose {
 export interface SavedCombo {
   label: string;
   sequence: string[]; // array of pose IDs
+  webhookUrl?: string; // Optional webhook to trigger
 }
 
 export class CustomGestureEngine {
-  private static POSES_KEY = 'echosign_known_poses';
-  private static COMBOS_KEY = 'echosign_custom_combos';
+  private static getPosesKey(): string {
+    const profileId = ProfileEngine.getActiveProfileId();
+    return profileId ? `echosign_poses_${profileId}` : 'echosign_known_poses';
+  }
+
+  private static getCombosKey(): string {
+    const profileId = ProfileEngine.getActiveProfileId();
+    return profileId ? `echosign_combos_${profileId}` : 'echosign_custom_combos';
+  }
   
   // Load alphabet of poses
   static getKnownPoses(): KnownPose[] {
     try {
-      const data = localStorage.getItem(this.POSES_KEY);
+      const data = localStorage.getItem(this.getPosesKey());
       if (data) return JSON.parse(data) as KnownPose[];
     } catch (e) {
       console.error("Error reading poses", e);
@@ -28,7 +37,7 @@ export class CustomGestureEngine {
   // Load saved combos
   static getSavedCombos(): SavedCombo[] {
     try {
-      const data = localStorage.getItem(this.COMBOS_KEY);
+      const data = localStorage.getItem(this.getCombosKey());
       if (data) return JSON.parse(data) as SavedCombo[];
     } catch (e) {
       console.error("Error reading combos", e);
@@ -38,11 +47,11 @@ export class CustomGestureEngine {
 
   static deleteCombo(label: string) {
     const combos = this.getSavedCombos().filter(c => c.label !== label);
-    localStorage.setItem(this.COMBOS_KEY, JSON.stringify(combos));
+    localStorage.setItem(this.getCombosKey(), JSON.stringify(combos));
   }
 
   // Save a new combo, automatically quantizing vectors into KnownPoses
-  static saveCombo(label: string, rawVectors: number[][]) {
+  static saveCombo(label: string, rawVectors: number[][], webhookUrl?: string) {
     const poses = this.getKnownPoses();
     const sequence: string[] = [];
 
@@ -71,17 +80,23 @@ export class CustomGestureEngine {
     }
 
     // Save updated alphabet
-    localStorage.setItem(this.POSES_KEY, JSON.stringify(poses));
+    localStorage.setItem(this.getPosesKey(), JSON.stringify(poses));
 
     // Save the combo
     const combos = this.getSavedCombos();
     const existingIndex = combos.findIndex(c => c.label === label);
-    if (existingIndex >= 0) {
-      combos[existingIndex].sequence = sequence;
-    } else {
-      combos.push({ label, sequence });
+    
+    const newCombo: SavedCombo = { label, sequence };
+    if (webhookUrl && webhookUrl.trim() !== '') {
+      newCombo.webhookUrl = webhookUrl.trim();
     }
-    localStorage.setItem(this.COMBOS_KEY, JSON.stringify(combos));
+    
+    if (existingIndex >= 0) {
+      combos[existingIndex] = newCombo;
+    } else {
+      combos.push(newCombo);
+    }
+    localStorage.setItem(this.getCombosKey(), JSON.stringify(combos));
   }
 
   static normalizeLandmarks(landmarks: Landmark[]): number[] {

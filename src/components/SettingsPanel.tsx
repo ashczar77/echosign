@@ -6,10 +6,12 @@ interface SettingsPanelProps {
   isOpen: boolean;
   onClose: () => void;
   getFeatureVector: () => number[] | null;
+  onSwitchProfile: () => void;
 }
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatureVector }) => {
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatureVector, onSwitchProfile }) => {
   const [newPhrase, setNewPhrase] = useState('');
+  const [newWebhook, setNewWebhook] = useState('');
   const [savedCombos, setSavedCombos] = useState<SavedCombo[]>([]);
   const [pendingVectors, setPendingVectors] = useState<number[][]>([]);
   
@@ -58,8 +60,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
 
   const handleSaveCombo = () => {
     if (newPhrase.trim() && pendingVectors.length > 0) {
-      CustomGestureEngine.saveCombo(newPhrase.trim(), pendingVectors);
+      CustomGestureEngine.saveCombo(newPhrase.trim(), pendingVectors, newWebhook);
       setNewPhrase('');
+      setNewWebhook('');
       setPendingVectors([]);
       refreshCombos();
     }
@@ -74,7 +77,15 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
     <div className={`settings-panel ${isOpen ? 'open' : ''}`}>
       <div className="settings-header">
         <h2>Dictionary</h2>
-        <button className="close-btn" onClick={onClose}>×</button>
+        <div>
+          <button 
+            onClick={onSwitchProfile}
+            style={{ background: 'transparent', color: '#00ffcc', border: '1px solid #00ffcc', borderRadius: '12px', padding: '6px 12px', marginRight: '15px', cursor: 'pointer' }}
+          >
+            Switch Profile
+          </button>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
       </div>
 
       <div className="settings-content">
@@ -89,6 +100,15 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
             value={newPhrase}
             onChange={(e) => setNewPhrase(e.target.value)}
             disabled={isRecording || pendingVectors.length > 0}
+            style={{ marginBottom: '10px' }}
+          />
+          <input 
+            type="text" 
+            placeholder="Optional Webhook URL (e.g. IFTTT, Home Assistant)" 
+            value={newWebhook}
+            onChange={(e) => setNewWebhook(e.target.value)}
+            disabled={isRecording || pendingVectors.length > 0}
+            style={{ fontSize: '12px', padding: '8px' }}
           />
           
           <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -130,7 +150,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
                 <li key={c.label}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span className="gesture-label">{c.label}</span>
-                    <span style={{ fontSize: '0.8rem', color: '#888' }}>{c.sequence.length} gestures</span>
+                    <span style={{ fontSize: '0.8rem', color: '#888' }}>
+                      {c.sequence.length} gestures {c.webhookUrl && ' • 🔗 Webhook'}
+                    </span>
                   </div>
                   <button className="delete-btn" onClick={() => handleDelete(c.label)}>Delete</button>
                 </li>
