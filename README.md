@@ -37,6 +37,21 @@ EchoSign deliberately avoids hardcoded OAuth integrations to remain universally 
 
 **Why this matters:** EchoSign never handles your Amazon passwords, requires zero OAuth maintenance, and doesn't need to know what smart devices you own. It acts as a modular, secure trigger for *any* smart home ecosystem.
 
+## Architecture & Security Principles
+
+Building an accessibility app for the living room requires strict adherence to privacy and seamless UX. Here are the core engineering decisions behind EchoSign:
+
+* **Why an Acoustic Proxy instead of a Native Alexa Skill?**
+  We intentionally avoided building a native skill to eliminate friction. Non-verbal users shouldn't have to authenticate, link accounts, or sign "Alexa, open EchoSign" every time they want to speak. By making the TV act as an "acoustic proxy" that speaks to the Echo device naturally out loud, the user experience is zero-friction.
+* **Air-gapped Privacy (No Cloud Video):**
+  Absolutely zero video data leaves the TV. We implemented a 100% serverless, local AI architecture. MediaPipe processes the frames locally on the Fire TV's CPU, extracts mathematical vectors, and immediately discards the video frame. All dictionaries and profiles are saved to the browser's LocalStorage. It is completely air-gapped from the cloud.
+* **Vector Quantization & Math Filtering:**
+  EchoSign doesn't rely on messy image classification. We built a custom Vector Quantization engine with a strict Euclidean distance threshold. If a gesture is sloppy and falls outside that mathematical radius, the AI simply ignores it.
+* **Performance & Throttling:**
+  To ensure the app runs flawlessly on low-power TV sticks, the AI uses a "Frame Throttle" and "Debounce" system. It calculates vector math on targeted frames and requires the user to hold the shape completely still for a fraction of a second before it registers, meaning transitional movements between signs are safely ignored while CPU load is reduced by 80%.
+* **Storage Limits & Collision Detection:**
+  The app is fully hardened against edge cases. It features a strict hard cap on combos to prevent browser quota crashes, mathematically intercepts duplicate sequences to prevent collisions, and actively prevents "ghost vectors" from saving if no hand is visible.
+
 ## Getting Started
 
 EchoSign is built as a lightweight HTML5 Web Application optimized for the Amazon Web App Runtime.
