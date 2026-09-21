@@ -51,12 +51,15 @@ export class ProfileEngine {
     const id = this.getActiveProfileId();
     if (!id) return;
     
+    const poses = localStorage.getItem(`echosign_poses_${id}`);
+    const combos = localStorage.getItem(`echosign_combos_${id}`);
+    
     const data = {
-      poses: localStorage.getItem(`echosign_poses_${id}`),
-      combos: localStorage.getItem(`echosign_combos_${id}`)
+      poses: poses ? JSON.parse(poses) : [],
+      combos: combos ? JSON.parse(combos) : []
     };
     
-    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -72,7 +75,12 @@ export class ProfileEngine {
     if (!id) throw new Error("No active profile");
     
     const data = JSON.parse(jsonString);
-    if (data.poses) localStorage.setItem(`echosign_poses_${id}`, data.poses);
-    if (data.combos) localStorage.setItem(`echosign_combos_${id}`, data.combos);
+    
+    // Support both older string formats and the newer array format
+    const posesString = typeof data.poses === 'string' ? data.poses : JSON.stringify(data.poses || []);
+    const combosString = typeof data.combos === 'string' ? data.combos : JSON.stringify(data.combos || []);
+    
+    localStorage.setItem(`echosign_poses_${id}`, posesString);
+    localStorage.setItem(`echosign_combos_${id}`, combosString);
   }
 }

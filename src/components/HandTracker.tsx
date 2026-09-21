@@ -133,8 +133,9 @@ const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture
             // 3. Debounce logic
             if (lastCalculatedPoseId === currentGesture) {
               gestureFrames++;
-              // A flat threshold for custom gestures (Adjusted slightly for throttled framerate)
-              const threshold = 15; 
+              // A flat threshold for custom gestures (Adjusted for throttled framerate)
+              // Since math runs every 5 frames, a threshold of 3 means 15 real frames (0.25s)
+              const threshold = 3; 
               
               if (gestureFrames >= threshold && lastCalculatedPoseId !== lastEmittedGesture) {
                 lastEmittedGesture = lastCalculatedPoseId;

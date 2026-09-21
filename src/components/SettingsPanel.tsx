@@ -88,16 +88,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
   };
 
   const handleDelete = (label: string) => {
-    CustomGestureEngine.deleteCombo(label);
-    refreshCombos();
-  };
-
-  const handleEdit = (combo: SavedCombo) => {
-    setNewPhrase(combo.label);
-    setNewWebhook(combo.webhookUrl || '');
-    setPendingVectors([]);
-    setPendingThumbnails([]);
-    setErrorMessage("Editing loaded. Re-record gestures if you want to change the sequence.");
+    if (window.confirm(`Are you sure you want to delete the gesture sequence for "${label}"?`)) {
+      CustomGestureEngine.deleteCombo(label);
+      refreshCombos();
+    }
   };
 
   const handleExport = () => {
@@ -223,10 +217,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
                       {c.sequence.length} gestures {c.webhookUrl && ' • 🔗 Webhook'}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', gap: '5px' }}>
-                    <button className="delete-btn" style={{ background: '#333', color: 'white' }} onClick={() => handleEdit(c)}>Edit</button>
-                    <button className="delete-btn" onClick={() => handleDelete(c.label)}>Delete</button>
-                  </div>
+                  <button className="delete-btn" onClick={() => handleDelete(c.label)}>Delete</button>
                 </li>
               ))}
             </ul>
