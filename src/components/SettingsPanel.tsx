@@ -51,11 +51,12 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
         // Take the snapshot NOW
         const vec = getFeatureVector();
         const img = getSnapshot();
-        if (vec && img) {
+        if (vec && vec.length > 0 && img) {
           setPendingVectors(prev => [...prev, vec]);
           setPendingThumbnails(prev => [...prev, img]);
+          setErrorMessage(null);
         } else {
-          console.error("No hand detected during snapshot");
+          setErrorMessage("No gesture identified. Please ensure your hand is clearly visible in the camera.");
         }
         
         setTimeout(() => {

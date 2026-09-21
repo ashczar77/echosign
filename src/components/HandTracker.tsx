@@ -149,6 +149,7 @@ const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture
             }
           } else {
             // No hand detected
+            latestVectorRef.current = null;
             noneFrames++;
             if (noneFrames >= 30) { // Require 1 full second of no hand to reset
               if (lastEmittedGesture !== 'None') {
