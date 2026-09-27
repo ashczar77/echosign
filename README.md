@@ -1,4 +1,8 @@
-# EchoSign
+<div align="center">
+  <img src="https://echosign-7pyc2731y-monaco8.vercel.app/logo.jpg" alt="EchoSign Logo" width="120" style="border-radius: 16px; margin-bottom: 20px;" />
+  <h1>EchoSign</h1>
+  <p><b><a href="https://echosign-7pyc2731y-monaco8.vercel.app/">Try the Live Demo Here</a></b></p>
+</div>
 
 Voice assistants revolutionized the smart home, but they left millions of non-verbal individuals behind. EchoSign is a Fire TV application that bridges this gap. By translating sign language into spoken words using a connected webcam, EchoSign empowers non-verbal users to communicate freely with their families and seamlessly interact with Alexa.
 
@@ -54,7 +58,7 @@ Building an accessibility app for the living room requires strict adherence to p
 
 ## Getting Started
 
-EchoSign is built as a lightweight HTML5 Web Application optimized for the Amazon Web App Runtime.
+EchoSign is built as a lightweight HTML5 Web Application optimized for the Amazon Web App Runtime. Because the native Amazon Silk Browser is Chromium-based, it natively supports the Web Speech API and WebRTC camera streams without any custom plugins. You can run it on any modern browser, but it is specifically designed for the 10-foot Fire TV experience.
 
 To run the app locally for development:
 
