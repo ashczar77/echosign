@@ -71,7 +71,7 @@ Open `http://localhost:5173` in your browser. For testing the Fire TV remote exp
 
 ## Built With
 
-* React & TypeScript
-* MediaPipe Hand Landmarker
-* Browser SpeechSynthesis API
-* Vite
+* **React & TypeScript**: Used to build the responsive 10-foot UI and ensure strict architectural type-safety.
+* **MediaPipe Hand Landmarker**: Powers the core 3D spatial tracking, running highly optimized computer vision directly on the local CPU/GPU.
+* **Browser SpeechSynthesis API**: The engine behind the "Acoustic Proxy", providing offline, zero-latency text-to-speech without requiring cloud TTS services.
+* **Vite**: The modern build tool that bundles the application for optimized production deployment to the Amazon Web App Runtime.
