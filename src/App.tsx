@@ -13,8 +13,8 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   const handTrackerRef = useRef<HandTrackerHandle>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const clearTextTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearTextTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Initialize the Voice Engine
   useEffect(() => {
