@@ -135,8 +135,9 @@ const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture
             if (lastCalculatedPoseId === currentGesture) {
               gestureFrames++;
               // A flat threshold for custom gestures (Adjusted for throttled framerate)
-              // Since math runs every 5 frames, a threshold of 3 means 15 real frames (0.25s)
-              const threshold = 3; 
+              // Since math runs every 5 frames, the currentGesture remains identical for those 5 frames.
+              // To require a 0.4 second hold at 60fps, we need a threshold of ~25 frames.
+              const threshold = 25; 
               
               if (gestureFrames >= threshold && lastCalculatedPoseId !== lastEmittedGesture) {
                 lastEmittedGesture = lastCalculatedPoseId;
