@@ -7,12 +7,14 @@ interface SettingsPanelProps {
   onClose: () => void;
   getFeatureVector: () => number[] | null;
   getSnapshot: () => string | null;
+  isPrivacyBlur: boolean;
+  onTogglePrivacyBlur: (blur: boolean) => void;
   onSwitchProfile: () => void;
 }
 
 import { ProfileEngine } from '../utils/ProfileEngine';
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatureVector, getSnapshot, onSwitchProfile }) => {
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatureVector, getSnapshot, isPrivacyBlur, onTogglePrivacyBlur, onSwitchProfile }) => {
   const [newPhrase, setNewPhrase] = useState('');
   const [newWebhook, setNewWebhook] = useState('');
   const [savedCombos, setSavedCombos] = useState<SavedCombo[]>([]);
@@ -133,6 +135,16 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, getFeatu
       </div>
 
       <div className="settings-content">
+        <div style={{ padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Anonymize Camera (Privacy Blur)</span>
+          <button 
+            onClick={() => onTogglePrivacyBlur(!isPrivacyBlur)}
+            style={{ padding: '6px 12px', background: isPrivacyBlur ? '#00ffcc' : 'transparent', color: isPrivacyBlur ? '#000' : '#888', border: `1px solid ${isPrivacyBlur ? '#00ffcc' : '#555'}`, borderRadius: '8px', cursor: 'pointer' }}
+          >
+            {isPrivacyBlur ? 'ON' : 'OFF'}
+          </button>
+        </div>
+
         <div className="teach-section">
           <h3>Add Custom Combo</h3>
           <p>

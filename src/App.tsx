@@ -11,6 +11,7 @@ function App() {
   const [comboBuffer, setComboBuffer] = useState<string[]>([]);
   const [spokenText, setSpokenText] = useState<string>('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isPrivacyBlur, setIsPrivacyBlur] = useState(() => localStorage.getItem('echosign_privacy_blur') === 'true');
   
   const handTrackerRef = useRef<HandTrackerHandle>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -84,7 +85,7 @@ function App() {
   return (
     <div className="tv-container">
       <div className="camera-layer">
-        <HandTracker ref={handTrackerRef} onGesture={handleGesture} />
+        <HandTracker ref={handTrackerRef} onGesture={handleGesture} isPrivacyBlur={isPrivacyBlur} />
       </div>
 
       <div className="gradient-overlay"></div>
@@ -126,6 +127,11 @@ function App() {
         onClose={() => setIsSettingsOpen(false)}
         getFeatureVector={() => handTrackerRef.current?.getFeatureVector() || null}
         getSnapshot={() => handTrackerRef.current?.getSnapshot() || null}
+        isPrivacyBlur={isPrivacyBlur}
+        onTogglePrivacyBlur={(blur) => {
+          setIsPrivacyBlur(blur);
+          localStorage.setItem('echosign_privacy_blur', blur.toString());
+        }}
         onSwitchProfile={() => {
           ProfileEngine.setActiveProfileId(''); // Clear active session
           setActiveProfileId(null);

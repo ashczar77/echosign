@@ -5,6 +5,7 @@ import './HandTracker.css';
 
 interface HandTrackerProps {
   onGesture?: (gesture: string) => void;
+  isPrivacyBlur?: boolean;
 }
 
 export interface HandTrackerHandle {
@@ -12,7 +13,7 @@ export interface HandTrackerHandle {
   getSnapshot: () => string | null;
 }
 
-const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture }, ref) => {
+const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture, isPrivacyBlur }, ref) => {
   const onGestureRef = useRef(onGesture);
 
   useEffect(() => {
@@ -191,7 +192,8 @@ const HandTracker = forwardRef<HandTrackerHandle, HandTrackerProps>(({ onGesture
         className="webcam-feed" 
         autoPlay 
         playsInline 
-        muted 
+        muted
+        style={{ filter: isPrivacyBlur ? 'blur(15px)' : 'none' }}
       ></video>
       <canvas 
         ref={canvasRef} 
