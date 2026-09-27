@@ -1,7 +1,7 @@
 <div align="center">
-  <img src="https://echosign-7pyc2731y-monaco8.vercel.app/logo.jpg" alt="EchoSign Logo" width="120" style="border-radius: 16px; margin-bottom: 20px;" />
+  <img src="public/logo.jpg" alt="EchoSign Logo" width="120" style="border-radius: 16px; margin-bottom: 20px;" />
   <h1>EchoSign</h1>
-  <p><b><a href="https://echosign-7pyc2731y-monaco8.vercel.app/">Try the Live Demo Here</a></b></p>
+  <p><b><a href="https://echosign-7pyc2731y-monaco8.vercel.app/">Experience EchoSign Live</a></b></p>
 </div>
 
 Voice assistants revolutionized the smart home, but they left millions of non-verbal individuals behind. EchoSign is a Fire TV application that bridges this gap. By translating sign language into spoken words using a connected webcam, EchoSign empowers non-verbal users to communicate freely with their families and seamlessly interact with Alexa.
