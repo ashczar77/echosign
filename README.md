@@ -4,7 +4,7 @@
   <p><b><a href="https://echosign-omega.vercel.app/">Experience EchoSign Live</a></b></p>
 </div>
 
-Voice assistants revolutionized the smart home, but they left millions of non-verbal individuals behind. EchoSign is a Fire TV application that bridges this gap. By translating sign language into spoken words using a connected webcam, EchoSign empowers non-verbal users to communicate freely with their families and seamlessly interact with Alexa.
+Voice assistants revolutionized the smart home. EchoSign ensures that this technology is fully inclusive for everyone. By translating sign language into spoken words using a connected webcam, EchoSign empowers non-verbal users to communicate freely with their families and seamlessly interact with Alexa.
 
 ## The Vision
 
