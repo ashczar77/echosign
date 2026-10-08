@@ -2,6 +2,7 @@
   <img src="public/logo.jpg" alt="EchoSign Logo" width="120" style="border-radius: 16px; margin-bottom: 20px;" />
   <h1>EchoSign</h1>
   <p><b><a href="https://echosign-omega.vercel.app/">Experience EchoSign Live</a></b></p>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </div>
 
 Voice assistants revolutionized the smart home. EchoSign ensures that this technology is fully inclusive for everyone. By translating sign language into spoken words using a connected webcam, EchoSign empowers non-verbal users to communicate freely with their families and seamlessly interact with Alexa.
