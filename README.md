@@ -56,6 +56,12 @@ Building an accessibility app for the living room requires strict adherence to p
 * **Storage Limits & Collision Detection:**
   The app is fully hardened against edge cases. It features a strict hard cap on combos to prevent browser quota crashes, mathematically intercepts duplicate sequences to prevent collisions, and actively prevents "ghost vectors" from saving if no hand is visible.
 
+## Deployment & TV Installation
+
+While EchoSign is built as a web application, end-users do not have to type a URL into their TV. 
+
+For production deployment, the Vercel URL is submitted directly to the **Amazon Developer Console** as a **Fire TV Web App**. Amazon's infrastructure automatically wraps the web deployment in a native APK shell. This allows users to download EchoSign directly from the official Fire TV Appstore. When launched from the TV home screen, the app opens instantly in a chromeless, full-screen native view, providing a seamless TV experience without exposing the underlying browser.
+
 ## Getting Started
 
 EchoSign is built as a lightweight HTML5 Web Application optimized for the Amazon Web App Runtime. Because the native Amazon Silk Browser is Chromium-based, it natively supports the Web Speech API and WebRTC camera streams without any custom plugins. You can run it on any modern browser, but it is specifically designed for the 10-foot Fire TV experience.
